@@ -1,0 +1,19 @@
+// {
+//   "python.linting.enabled": true,
+//   "python.linting.pylintEnabled": true,
+//   "python.formatting.provider": "black",
+//   // You might add black-specific args if needed
+//   "editor.formatOnSave": true,
+//   "editor.codeActionsOnSave": {
+//     "source.fixAll": "explicit"
+//   }
+// }
+
+{
+  "editor.formatOnSave": true,
+  "editor.renderWhitespace": "all",
+  "files.autoSave": "afterDelay",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": ["--line-length=80"]
+}
