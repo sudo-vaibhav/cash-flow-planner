@@ -3,7 +3,7 @@
 ###############################################################################
 
 from decimal import Decimal
-from typing import Dict, List, TypedDict
+from typing import Dict, List, Tuple, TypedDict
 
 from flow_prediction.shared.value_objects.money import Money
 
@@ -57,7 +57,7 @@ class Expense(Aggregate):
             raise ValueError(f"Expense {self.id} has no funding corpora")
 
     def isActive(self, year: int) -> bool:
-        return self.startYear <= year <= self.endYear
+        return self.startYear <= year <= self.endYear and self.enabled
 
     def getAmountNeeded(self, year) -> Money:
         if not self.isActive(year):
@@ -68,7 +68,7 @@ class Expense(Aggregate):
             else Money(0)
         ) + self.recurringValue.getAmount(year)
 
-    def getCorpus(self, corpuses: List[Corpus], id: Id):
+    def _getCorpus(self, corpuses: List[Corpus], id: Id):
         for corpus in corpuses:
             if corpus.id == id:
                 return corpus
@@ -76,25 +76,31 @@ class Expense(Aggregate):
 
     def getCorporaDeductions(
         self, corpuses: List[Corpus], year
-    ) -> List[CorporaDeduction]:
+    ) -> Tuple[List[CorporaDeduction], List[str]]:
         if not self.isActive(year):
-            return []
+            return ([], [])
+        warnings = []
         amountToBeDeducted = self.getAmountNeeded(year)
         deductions = []
         for fundingCorpus in self.fundingCorpora[:-1]:
-            corpus = self.getCorpus(corpuses, fundingCorpus["id"])
+            corpus = self._getCorpus(corpuses, fundingCorpus["id"])
             corpusDeduction = min(
                 corpus.getBalance(),
                 amountToBeDeducted,
             )
             deductions.append({"corpus": corpus, "deduction": corpusDeduction})
             amountToBeDeducted -= corpusDeduction
-        finalCorpus = self.getCorpus(corpuses, self.fundingCorpora[-1]["id"])
+        finalCorpus = self._getCorpus(corpuses, self.fundingCorpora[-1]["id"])
+        if amountToBeDeducted > finalCorpus.getBalance():
+            warnings.append(
+                f"Expense {self.id} in the year {year} overshoots corpora allotment"
+            )
+
         # deduct any remaining amount from the last corpus, even if it doesn't have enough
         deductions.append(
             {"corpus": finalCorpus, "deduction": amountToBeDeducted}
         )
-        return deductions
+        return (deductions, warnings)
 
         # return list(map(lambda corpus:self._getCorpusDeductions(corpus['id']),self.fundingCorpora))
 

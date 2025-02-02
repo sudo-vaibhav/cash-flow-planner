@@ -1,9 +1,10 @@
 from decimal import Decimal
 from typing import List, TypedDict
 from moneyed import INR, Money
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from .allocation import Allocation
 from flow_prediction.shared.value_objects import InflationAdjustableValue, Id
+from ..base import Aggregate
 
 
 class CashflowInitData(TypedDict):
@@ -16,7 +17,7 @@ class CashflowInitData(TypedDict):
     expandedDescription: str
 
 
-class Cashflow:
+class Cashflow(Aggregate):
     """
     A strictly positive flow (e.g., salary, rental income) with a
     start/end year and growthRate.
@@ -34,9 +35,10 @@ class Cashflow:
         self,
         data: CashflowInitData,
     ):
-        self.id = data["id"]
+        super().__init__(data["id"])
         self.recurringValue = data["recurringValue"]
         self.startYear = data["startYear"]
+        self.enabled = data["enabled"]
         self.endYear = data["endYear"]
         self._allocations = data["allocations"]
         self.expandedDescription = data["expandedDescription"]
@@ -57,9 +59,11 @@ class Cashflow:
 
     def is_active(self, year: int) -> bool:
         """Check if this flow is active in a given year."""
-        return self.startYear <= year <= self.endYear
+        return self.startYear <= year <= self.endYear and self.enabled
 
     def getAllocation(self, year: int):
+        if not self.is_active(year):
+            return None
         for allocation in self._allocations:
             if allocation.startYear <= year <= allocation.endYear:
                 return allocation

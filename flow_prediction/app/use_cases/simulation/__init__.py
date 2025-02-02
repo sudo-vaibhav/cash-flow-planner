@@ -6,7 +6,6 @@ from flow_prediction.shared.value_objects import (
     Decimal,
     Id,
 )
-
 from .. import UseCase
 from .init_data import CashflowSimulationUseCaseInitData
 
@@ -56,6 +55,8 @@ class CashflowSimulationUseCase(UseCase):
                             Decimal(d["growthRate"]),
                             Money(d["initialAmount"]),
                             d["startYear"],
+                            d["endYear"],
+                            Id(d["successorCorpusId"]),
                         ),
                         self.data["corpora"],
                     )

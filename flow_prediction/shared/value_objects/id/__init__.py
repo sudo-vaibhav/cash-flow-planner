@@ -10,3 +10,6 @@ class Id:
         if not isinstance(o, Id):
             return NotImplemented
         return self._value == o._value
+
+    def __repr__(self):
+        return f"Id(value={self._value})"

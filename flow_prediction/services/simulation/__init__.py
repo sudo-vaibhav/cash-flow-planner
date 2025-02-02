@@ -1,5 +1,17 @@
+from collections import defaultdict
+from typing import Dict, List, TypedDict
 from flow_prediction.shared.value_objects import Money, Id
 from .init_data import CashflowSimulationServiceInitData
+
+
+class CorpusSummary(TypedDict):
+    value: float
+    year: int
+
+
+class SimulationResponse(TypedDict):
+    simulation: Dict[str, List[CorpusSummary]]
+    warnings: List[str]
 
 
 class CashflowSimulationService:
@@ -16,14 +28,16 @@ class CashflowSimulationService:
                 return corpus
         return None
 
-    def simulate(self):
-        summary = []
+    def simulate(self) -> SimulationResponse:
+        corporaSimulation: Dict[str, List[CorpusSummary]] = defaultdict(list)
+        warnings = []
         for year in range(
             self.simulation["startYear"], self.simulation["endYear"] + 1
         ):
+
             # account for appreication of all corpora
             for corpus in self.corpora:
-                corpus.deposit(corpus.getAnnualAppreciation())
+                corpus.deposit(corpus.getAnnualAppreciation(year))
 
             # allocate cashflows to corpora for the year
             for cashflow in self.cashflows:
@@ -42,15 +56,28 @@ class CashflowSimulationService:
 
             # now time for expenses which must deduct from corpora
             for expense in self.expenses:
-                deductions = expense.getCorporaDeductions(self.corpora, year)
+                deductions, deductionWarnings = expense.getCorporaDeductions(
+                    self.corpora, year
+                )
+                warnings.extend(deductionWarnings)
                 for deduction in deductions:
                     deduction["corpus"].withdraw(deduction["deduction"])
-            summary.append(
-                {
-                    "year": year,
-                    "corpora": [
-                        corpus.getBalance().amount for corpus in self.corpora
-                    ],
-                }
-            )
-        return summary
+            for corpus in self.corpora:
+                corporaSimulation[corpus.id.value].append(
+                    {
+                        "value": float(corpus.getBalance().amount),
+                        "year": year,
+                    }
+                )
+            # move to successor courpus if a particular corpus is ending
+            for corpus in self.corpora:
+                if corpus.isEnding(year):
+                    successor = self._getCorpus(corpus.successorCorpusId)
+                    if successor is None:
+                        raise ValueError(
+                            f"Successor corpus {corpus.successorCorpusId} not found for corpus {corpus.id}"
+                        )
+                    corpus.withdraw(corpus.getBalance())
+                    successor.deposit(corpus.getBalance())
+
+        return {"simulation": corporaSimulation, "warnings": warnings}

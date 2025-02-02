@@ -21,14 +21,21 @@ class Corpus(Aggregate):
         growthRate: Decimal,
         initialValue: Money,
         startYear: int,
+        endYear: int,
+        successCorpusId: Id,
     ):
         super().__init__(id)
         self.growthRate = growthRate  # e.g. 0.03 => 3% yearly
         self._balance = initialValue
         self.startYear = startYear
+        self.endYear = endYear
+        self.successorCorpusId = successCorpusId
 
     def deposit(self, amount: Money):
         self._balance += amount
+
+    def isGrowing(self, year: int) -> bool:
+        return self.startYear <= year <= self.endYear
 
     def getBalance(self):
         return self._balance
@@ -43,6 +50,9 @@ class Corpus(Aggregate):
         """
         self._balance -= amount
 
+    def isEnding(self, year: int) -> bool:
+        return year == self.endYear
+
     # def apply_growth(self):
     #     """
     #     Increase the balance by (growth_rate) in a year.
@@ -53,5 +63,7 @@ class Corpus(Aggregate):
     def __repr__(self):
         return f"<Corpus {self.id}: balance={self._balance:.2f}>"
 
-    def getAnnualAppreciation(self):
+    def getAnnualAppreciation(self, year):
+        if not self.isGrowing(year):
+            return Money(0)
         return self._balance * self.growthRate
