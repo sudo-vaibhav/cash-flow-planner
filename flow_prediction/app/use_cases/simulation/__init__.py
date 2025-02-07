@@ -15,6 +15,19 @@ class CashflowSimulationUseCase(UseCase):
         self.data = data
 
     def execute(self):
+        corpora = list(
+                    map(
+                        lambda d: Corpus(
+                            Id(d["id"]),
+                            Decimal(d["growthRate"]),
+                            Money(d["initialAmount"]),
+                            d["startYear"],
+                            d["endYear"],
+                            Id(d["successorCorpusId"]) if "successorCorpusId" in d else None,
+                        ),
+                        self.data["corpora"],
+                    )
+                )
         return CashflowSimulationService(
             {
                 "expenses": list(
@@ -43,24 +56,13 @@ class CashflowSimulationUseCase(UseCase):
                                     lambda fc: {"id": Id(fc["id"])},
                                     d["fundingCorpora"],
                                 )
-                            ),
+                            ) if "fundingCorpora" in d else None,
+                            corpora=corpora
                         ),
                         self.data["expenses"],
                     )
                 ),
-                "corpora": list(
-                    map(
-                        lambda d: Corpus(
-                            Id(d["id"]),
-                            Decimal(d["growthRate"]),
-                            Money(d["initialAmount"]),
-                            d["startYear"],
-                            d["endYear"],
-                            Id(d["successorCorpusId"]),
-                        ),
-                        self.data["corpora"],
-                    )
-                ),
+                "corpora": corpora,
                 "cashflows": list(
                     map(
                         lambda d: Cashflow(

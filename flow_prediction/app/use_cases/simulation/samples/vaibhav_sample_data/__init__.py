@@ -17,18 +17,78 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "recurringValue": {"amount": 0, "referenceTime": 2025},
             "fundingCorpora": [
                 {
-                    "id": "large-cap-mutual-fund",
-                },
+                    "id": "marriage-large-mid-cap-mutual-fund",
+                }
+            ],
+        },
+        {
+            "id": "travel",
+            "startYear": 2025,
+            "endYear": 2100,
+            "enabled": False,
+            "growthRate": 0.09,
+            "fundingCorpora": [
                 {
                     "id": "arbitrage-fund",
                 },
+                {
+                    "id": "savings-bank",
+                },
+            ],
+            "initialValue": {
+                "amount": 0,
+                "referenceTime": 2025,
+            },
+            "recurringValue": {
+                "amount": 3_60_000,
+                "referenceTime": 2025,
+            },
+        },
+        {
+            "id": "life-insurance",
+            "startYear": 2025,
+            "endYear": 2061,
+            "enabled": False,
+            "growthRate": 0.00,
+            "initialValue": {
+                "amount": 0,
+                "referenceTime": 2025,
+            },
+            "recurringValue": {
+                "amount": 36_000,
+                "referenceTime": 2025,
+            },
+            "fundingCorpora": [
+                {
+                    "id": "arbitrage-fund",
+                }
+            ],
+        },
+        {
+            "id": "health-insurance",
+            "startYear": 2025,
+            "endYear": 2100,
+            "enabled": False,
+            "growthRate": 0.13,
+            "initialValue": {
+                "amount": 0,
+                "referenceTime": 2025,
+            },
+            "recurringValue": {
+                "amount": 15_448,
+                "referenceTime": 2025,
+            },
+            "fundingCorpora": [
+                {
+                    "id": "large-cap-mutual-fund",  # assuming bulk pre-payment for 3-5 years always
+                }
             ],
         },
         {
             "id": "retirement",
             "startYear": 2061,
             "endYear": 2091,
-            "enabled": True,
+            "enabled": False,
             "growthRate": 0.09,
             "initialValue": {
                 "amount": 0,
@@ -37,36 +97,13 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "recurringValue": {
                 "amount": 1_50_000 * 12,
                 "referenceTime": 2025,
-            },
-            "fundingCorpora": [
-                {
-                    "id": "savings-bank",
-                },
-                {
-                    "id": "epf",
-                },
-                {
-                    "id": "large-cap-mutual-fund",
-                },
-                {
-                    "id": "medium-large-cap-mutual-fund",
-                },
-                {
-                    "id": "medium-small-cap-mutual-fund",
-                },
-                {
-                    "id": "arbitrage-fund",
-                },
-                {
-                    "id": "small-cap-mutual-fund",
-                },
-            ],
+            }
         },
         {
             "id": "rent",
             "startYear": 2028,
             "endYear": 2091,
-            "enabled": True,
+            "enabled": False,
             "growthRate": 0.10,
             "initialValue": {
                 "amount": 58_000 * 2,
@@ -89,7 +126,7 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "id": "parents",
             "startYear": 2025,
             "endYear": 2035,
-            "enabled": True,
+            "enabled": False,
             "growthRate": 0.09,
             "initialValue": {
                 "amount": 0,
@@ -152,8 +189,14 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "growthRate": 0.03,
             "startYear": 2025,
             "endYear": 2100,
-            "initialAmount": 1_50_000,
-            "successorCorpusId": "large-cap-mutual-fund",
+            "initialAmount": 1_50_000
+        },
+        {
+            "id": "marriage-large-mid-cap-mutual-fund",
+            "growthRate": 0.11,
+            "startYear": 2025,
+            "endYear": 2100,
+            "initialAmount": 0
         },
         {
             "id": "epf",
@@ -161,7 +204,6 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "startYear": 2025,
             "initialAmount": 0,
             "endYear": 2061,
-            "successorCorpusId": "large-cap-mutual-fund",
         },
         {
             "id": "large-cap-mutual-fund",
@@ -169,7 +211,6 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "startYear": 2025,
             "initialAmount": 0,
             "endYear": 2100,
-            "successorCorpusId": "large-cap-mutual-fund",
         },
         {
             "id": "small-cap-mutual-fund",
@@ -177,7 +218,6 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "startYear": 2025,
             "initialAmount": 0,
             "endYear": 2100,
-            "successorCorpusId": "large-cap-mutual-fund",
         },
         {
             "id": "medium-large-cap-mutual-fund",
@@ -185,15 +225,13 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "startYear": 2025,
             "initialAmount": 0,
             "endYear": 2100,
-            "successorCorpusId": "large-cap-mutual-fund",
         },
         {
-            "id": "medium-small-cap-mutual-fund",
-            "growthRate": 0.14,
+            "id": "mirae-asset-elss-tax-saver-fund",
+            "growthRate": 0.1951,
             "startYear": 2025,
-            "initialAmount": 0,
+            "initialAmount": 10_326,
             "endYear": 2100,
-            "successorCorpusId": "large-cap-mutual-fund",
         },
         {
             "id": "arbitrage-fund",
@@ -201,7 +239,6 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "startYear": 2025,
             "initialAmount": 0,
             "endYear": 2100,
-            "successorCorpusId": "large-cap-mutual-fund",
         },
     ],
     "cashflows": [
@@ -220,8 +257,9 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
                     "startYear": 2025,
                     "endYear": 2091,
                     "split": [
-                        {"corpusId": "savings-bank", "ratio": 0.5},
+                        {"corpusId": "savings-bank", "ratio": 0.3},
                         {"corpusId": "large-cap-mutual-fund", "ratio": 0.5},
+                        {"corpusId":"marriage-large-mid-cap-mutual-fund","ratio":0.2}
                     ],
                 }
             ],
@@ -230,7 +268,7 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
     ],
     "simulation": {
         "startYear": 2025,
-        "endYear": 2091,
+        "endYear": 2030,
     },
     "currency": "INR",
 }

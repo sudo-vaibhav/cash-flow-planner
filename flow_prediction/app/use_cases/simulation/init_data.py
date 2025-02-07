@@ -1,4 +1,4 @@
-from typing import Optional, TypedDict, List
+from typing import Optional, TypedDict, List, Union
 
 
 class AmountReference(TypedDict):
@@ -27,7 +27,7 @@ class Corpus(TypedDict):
     startYear: int
     endYear: int
     initialAmount: int
-    successorCorpusId: str
+    successorCorpusId: Union[str,None]
 
 
 class CashflowRecurringValue(TypedDict):

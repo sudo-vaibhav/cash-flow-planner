@@ -3,7 +3,7 @@
 ###############################################################################
 
 from decimal import Decimal
-from typing import Dict, List, Tuple, TypedDict
+from typing import Dict, List, Tuple, TypedDict, Union
 
 from flow_prediction.shared.value_objects.money import Money
 
@@ -39,7 +39,8 @@ class Expense(Aggregate):
         enabled: bool,
         initialValue: InflationAdjustableValue,
         recurringValue: InflationAdjustableValue,
-        fundingCorpora: List[FundingCorpus],
+        fundingCorpora: Union[List[FundingCorpus],None],
+        corpora: List[Corpus],
         # TODO: account for corpus priority
     ):
         super().__init__(id)
@@ -49,7 +50,9 @@ class Expense(Aggregate):
         self.enabled = enabled
         self.initialValue = initialValue
         self.recurringValue = recurringValue
-        self.fundingCorpora = fundingCorpora
+        self.fundingCorpora: List[FundingCorpus] = fundingCorpora if fundingCorpora is not None else list(map(
+            lambda corpus: {"id": corpus.id}, corpora
+        ))
         self.validate()
 
     def validate(self):

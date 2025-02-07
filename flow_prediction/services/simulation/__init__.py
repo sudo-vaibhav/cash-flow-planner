@@ -35,7 +35,7 @@ class CashflowSimulationService:
             self.simulation["startYear"], self.simulation["endYear"] + 1
         ):
 
-            # account for appreication of all corpora
+            # account for appreciation of all corpora
             for corpus in self.corpora:
                 corpus.deposit(corpus.getAnnualAppreciation(year))
 
@@ -69,9 +69,9 @@ class CashflowSimulationService:
                         "year": year,
                     }
                 )
-            # move to successor courpus if a particular corpus is ending
+            # move to successor corpus if a particular corpus is ending
             for corpus in self.corpora:
-                if corpus.isEnding(year):
+                if corpus.isEnding(year) and corpus.successorCorpusId is not None:
                     successor = self._getCorpus(corpus.successorCorpusId)
                     if successor is None:
                         raise ValueError(

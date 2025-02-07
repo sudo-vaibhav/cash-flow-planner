@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Union
 from flow_prediction.shared.value_objects import (
     Id,
     InflationAdjustableValue,
@@ -22,7 +23,7 @@ class Corpus(Aggregate):
         initialValue: Money,
         startYear: int,
         endYear: int,
-        successCorpusId: Id,
+        successCorpusId: Union[Id, None],
     ):
         super().__init__(id)
         self.growthRate = growthRate  # e.g. 0.03 => 3% yearly
