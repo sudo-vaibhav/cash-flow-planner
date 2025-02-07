@@ -1,8 +1,9 @@
-from decimal import Decimal
+# from decimal import Decimal
 from typing import Union
 from flow_prediction.shared.value_objects import (
     Id,
     InflationAdjustableValue,
+    Decimal,
     Money,
 )
 from ..base import Aggregate

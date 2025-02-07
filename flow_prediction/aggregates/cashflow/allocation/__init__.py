@@ -1,6 +1,5 @@
-from decimal import Decimal
 from typing import Sequence, TypedDict
-from flow_prediction.shared.value_objects import Id
+from flow_prediction.shared.value_objects import Id,Decimal
 
 
 class AllocationSplit(TypedDict):
@@ -28,8 +27,9 @@ class Allocation:
 
     def validate(self):
         # split should sum to 1
-        if sum([split["ratio"] for split in self.split]) != 1:
-            raise ValueError("Allocation split should sum to 1")
+        allocationSum = sum([split["ratio"] for split in self.split])
+        if not allocationSum.quantizedComparison(Decimal(1)):
+            raise ValueError('Allocation split should sum to 1, current: '+ str(allocationSum))
 
     # def allocate(self):
     #     pass

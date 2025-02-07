@@ -1,3 +1,5 @@
+from gc import enable
+
 from ...init_data import (
     CashflowSimulationUseCaseInitData,
 )
@@ -25,7 +27,7 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "id": "travel",
             "startYear": 2025,
             "endYear": 2100,
-            "enabled": False,
+            "enabled": True,
             "growthRate": 0.09,
             "fundingCorpora": [
                 {
@@ -68,7 +70,7 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "id": "health-insurance",
             "startYear": 2025,
             "endYear": 2100,
-            "enabled": False,
+            "enabled": True,
             "growthRate": 0.13,
             "initialValue": {
                 "amount": 0,
@@ -80,7 +82,7 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             },
             "fundingCorpora": [
                 {
-                    "id": "large-cap-mutual-fund",  # assuming bulk pre-payment for 3-5 years always
+                    "id": "health-insurance-large-cap-mutual-fund",  # assuming bulk pre-payment for 3-5 years always
                 }
             ],
         },
@@ -103,7 +105,7 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "id": "rent",
             "startYear": 2028,
             "endYear": 2091,
-            "enabled": False,
+            "enabled": True,
             "growthRate": 0.10,
             "initialValue": {
                 "amount": 58_000 * 2,
@@ -116,17 +118,14 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "fundingCorpora": [
                 {
                     "id": "savings-bank",
-                },
-                {
-                    "id": "large-cap-mutual-fund",
-                },
+                }
             ],
         },
         {
             "id": "parents",
             "startYear": 2025,
             "endYear": 2035,
-            "enabled": False,
+            "enabled": True,
             "growthRate": 0.09,
             "initialValue": {
                 "amount": 0,
@@ -146,7 +145,7 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "id": "kid-1",
             "startYear": 2032,
             "endYear": 2055,
-            "enabled": False,
+            "enabled": True,
             "growthRate": 0.09,
             "initialValue": {
                 "amount": 0,
@@ -206,8 +205,8 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "endYear": 2061,
         },
         {
-            "id": "large-cap-mutual-fund",
-            "growthRate": 0.12,
+            "id": "health-insurance-large-cap-mutual-fund",
+            "growthRate": 0.10,
             "startYear": 2025,
             "initialAmount": 0,
             "endYear": 2100,
@@ -240,6 +239,13 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             "initialAmount": 0,
             "endYear": 2100,
         },
+        {
+            "id":"microsoft-stock",
+            "growthRate":0.1694,
+            "startYear":2025,
+            "initialAmount":11_62_006,
+            "endYear":2100
+        }
     ],
     "cashflows": [
         {
@@ -257,18 +263,62 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
                     "startYear": 2025,
                     "endYear": 2091,
                     "split": [
-                        {"corpusId": "savings-bank", "ratio": 0.3},
-                        {"corpusId": "large-cap-mutual-fund", "ratio": 0.5},
-                        {"corpusId":"marriage-large-mid-cap-mutual-fund","ratio":0.2}
+                        {"corpusId": "savings-bank", "ratio": 0.5},
+                        {"corpusId": "health-insurance-large-cap-mutual-fund", "ratio": 0.02},
+                        {"corpusId":"marriage-large-mid-cap-mutual-fund","ratio":0.38},
+                        {"corpusId":"arbitrage-fund","ratio":0.1},
                     ],
                 }
             ],
             "expandedDescription": "my income",
+        },
+        {
+            "id": "microsoft-stock-credit",
+            "recurringValue": {
+                "amount": 59_151*12,
+                "referenceTime": 2025,
+                "growthRate": 0.10,
+            },
+            "enabled":True,
+            "startYear":2025,
+            "endYear":2026,
+            "allocations" : [
+                {
+                    "startYear":2025,
+                    "endYear":2026,
+                    "split":[
+                        {"corpusId":"microsoft-stock","ratio":1}
+                    ]
+                }
+            ],
+            "expandedDescription":"microsoft stock credit"
+        },
+        {
+            "id": "wife-income",
+            "recurringValue": {
+                "amount": 50_000*12,
+                "referenceTime": 2025,
+                "growthRate": 0.10,
+            },
+            "enabled":True,
+            "startYear":2028,
+            "endYear":2061,
+            "allocations" : [
+                {
+                    "startYear":2025,
+                    "endYear":2100,
+                    "split":[
+                        {"corpusId":"savings-bank","ratio":1}
+                    ]
+                }
+            ],
+            "expandedDescription":"microsoft stock credit"
         }
     ],
     "simulation": {
         "startYear": 2025,
-        "endYear": 2030,
+        "endYear": 2091,
     },
     "currency": "INR",
 }
+

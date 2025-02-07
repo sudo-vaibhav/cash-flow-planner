@@ -2,7 +2,7 @@
 # 5. Expense
 ###############################################################################
 
-from decimal import Decimal
+
 from typing import Dict, List, Tuple, TypedDict, Union
 
 from flow_prediction.shared.value_objects.money import Money
@@ -79,10 +79,10 @@ class Expense(Aggregate):
 
     def getCorporaDeductions(
         self, corpuses: List[Corpus], year
-    ) -> Tuple[List[CorporaDeduction], List[str]]:
+    ) -> Tuple[List[CorporaDeduction], Union[Corpus,None]]:
         if not self.isActive(year):
-            return ([], [])
-        warnings = []
+            return ([], None)
+        violatedCorpus: Union[Corpus,None] = None
         amountToBeDeducted = self.getAmountNeeded(year)
         deductions = []
         for fundingCorpus in self.fundingCorpora[:-1]:
@@ -95,15 +95,17 @@ class Expense(Aggregate):
             amountToBeDeducted -= corpusDeduction
         finalCorpus = self._getCorpus(corpuses, self.fundingCorpora[-1]["id"])
         if amountToBeDeducted > finalCorpus.getBalance():
-            warnings.append(
-                f"Expense {self.id} in the year {year} overshoots corpora allotment"
-            )
+            violatedCorpus = finalCorpus
+            # violatedCorpora.append(
+            #     finalCorpus
+            #     # f"Expense {self.id} in the year {year} overshoots corpora allotment"
+            # )
 
         # deduct any remaining amount from the last corpus, even if it doesn't have enough
         deductions.append(
             {"corpus": finalCorpus, "deduction": amountToBeDeducted}
         )
-        return (deductions, warnings)
+        return (deductions, violatedCorpus)
 
         # return list(map(lambda corpus:self._getCorpusDeductions(corpus['id']),self.fundingCorpora))
 

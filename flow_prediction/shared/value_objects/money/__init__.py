@@ -1,6 +1,5 @@
 # from typing import Union
 # from moneyed import Money as MoneyedMoney, format_money
-# import decimal
 # from decimal import Decimal, ROUND_HALF_EVEN
 
 
@@ -64,8 +63,7 @@
 
 from typing import Union
 from moneyed import Money as MoneyedMoney, format_money
-import decimal
-from decimal import Decimal, ROUND_HALF_EVEN
+from ..decimal import Decimal
 
 
 class Money(MoneyedMoney):
@@ -76,7 +74,8 @@ class Money(MoneyedMoney):
 
     def format(self):
         return format_money(self, locale="en_IN")
-
+    def __float__(self):
+        return float(self.amount)
 
 # if isinstance(amount, MoneyedMoney):
 #     self._data = amount
