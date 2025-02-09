@@ -6,8 +6,8 @@ from flow_prediction.shared.value_objects import (
     Decimal,
     Id,
 )
-from .. import UseCase
 from .init_data import CashflowSimulationUseCaseInitData
+from .. import UseCase
 
 
 class CashflowSimulationUseCase(UseCase):
@@ -16,18 +16,18 @@ class CashflowSimulationUseCase(UseCase):
 
     def execute(self):
         corpora = list(
-                    map(
-                        lambda d: Corpus(
-                            Id(d["id"]),
-                            Decimal(d["growthRate"]),
-                            Money(d["initialAmount"]),
-                            d["startYear"],
-                            d["endYear"],
-                            Id(d["successorCorpusId"]) if "successorCorpusId" in d else None,
-                        ),
-                        self.data["corpora"],
-                    )
-                )
+            map(
+                lambda d: Corpus(
+                    Id(d["id"]),
+                    Decimal(d["growthRate"]),
+                    Money(d["initialAmount"]),
+                    d["startYear"],
+                    d["endYear"],
+                    (Id(d["successorCorpusId"]) if "successorCorpusId" in d else None),
+                ),
+                self.data["corpora"],
+            )
+        )
         return CashflowSimulationService(
             {
                 "expenses": list(
@@ -40,24 +40,24 @@ class CashflowSimulationUseCase(UseCase):
                             InflationAdjustableValue(
                                 amount=Money(d["initialValue"]["amount"]),
                                 growthRate=Decimal(d["growthRate"]),
-                                referenceTime=d["initialValue"][
-                                    "referenceTime"
-                                ],
+                                referenceTime=d["initialValue"]["referenceTime"],
                             ),
                             InflationAdjustableValue(
                                 amount=Money(d["recurringValue"]["amount"]),
                                 growthRate=Decimal(d["growthRate"]),
-                                referenceTime=d["recurringValue"][
-                                    "referenceTime"
-                                ],
+                                referenceTime=d["recurringValue"]["referenceTime"],
                             ),
-                            fundingCorpora=list(
-                                map(
-                                    lambda fc: {"id": Id(fc["id"])},
-                                    d["fundingCorpora"],
+                            fundingCorpora=(
+                                list(
+                                    map(
+                                        lambda fc: {"id": Id(fc["id"])},
+                                        d["fundingCorpora"],
+                                    )
                                 )
-                            ) if "fundingCorpora" in d else None,
-                            corpora=corpora
+                                if "fundingCorpora" in d
+                                else None
+                            ),
+                            corpora=corpora,
                         ),
                         self.data["expenses"],
                     )
@@ -71,9 +71,7 @@ class CashflowSimulationUseCase(UseCase):
                                 "id": Id(d["id"]),
                                 "startYear": d["startYear"],
                                 "endYear": d["endYear"],
-                                "expandedDescription": d[
-                                    "expandedDescription"
-                                ],
+                                "expandedDescription": d["expandedDescription"],
                                 "recurringValue": InflationAdjustableValue(
                                     Money(d["recurringValue"]["amount"]),
                                     d["recurringValue"]["referenceTime"],
@@ -90,9 +88,7 @@ class CashflowSimulationUseCase(UseCase):
                                                         lambda d3: (
                                                             {
                                                                 "corpusId": Id(
-                                                                    d3[
-                                                                        "corpusId"
-                                                                    ]
+                                                                    d3["corpusId"]
                                                                 ),
                                                                 "ratio": Decimal(
                                                                     d3["ratio"]
@@ -117,6 +113,8 @@ class CashflowSimulationUseCase(UseCase):
                     "endYear": self.data["simulation"]["endYear"],
                 },
                 "currency": self.data["currency"],
+                "fallbackCorpusId": Id(self.data["fallbackCorpusId"]),
+                "baseInflation": Decimal(self.data["baseInflation"]),
             }
         ).simulate()
 

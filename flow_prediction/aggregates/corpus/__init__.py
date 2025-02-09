@@ -1,8 +1,8 @@
 # from decimal import Decimal
 from typing import Union
+
 from flow_prediction.shared.value_objects import (
     Id,
-    InflationAdjustableValue,
     Decimal,
     Money,
 )
@@ -33,16 +33,46 @@ class Corpus(Aggregate):
         self.endYear = endYear
         self.successorCorpusId = successCorpusId
 
-    def deposit(self, amount: Money):
+    def conductAnnualAppreciation(self, year: int):
+        appreciatedAmount = self._getAnnualAppreciation(year)
+        if appreciatedAmount.isQuantizedEqual(Money(0)):
+            return
+        print(
+            f"Conducting annual appreciation for corpus {self.id} in year {year} with amount {float(appreciatedAmount.amount)}"
+        )
+        self._balance += appreciatedAmount
+
+    def deposit(self, amount: Money, year: int):
+        if not self.isActive(year):
+            raise ValueError(
+                f"Corpus {self.id} is not active in year {year}, hence cannot deposit, only grow"
+            )
         self._balance += amount
 
-    def isGrowing(self, year: int) -> bool:
+    def transferAllTo(self, target, year):
+        if not isinstance(target, Corpus):
+            raise ValueError(f"Target must be a Corpus")
+        print(
+            f"Transferring the entire corpus value {float(self._balance.amount)} from {self.id} to {target.id}"
+        )
+        balance = self.getBalance()
+        self.withdraw(balance, year)
+        target.deposit(balance, year)
+
+    def isActive(self, year: int) -> bool:
         return self.startYear <= year <= self.endYear
 
     def getBalance(self):
         return self._balance
 
-    def withdraw(self, amount: Money):
+    def getInflationAdjustedBalance(
+        self, currentYear, baseYear: int, baseInflation: Decimal
+    ):
+        return self._balance / (
+            (1 + baseInflation) ** (currentYear - baseYear)
+        )
+
+    def withdraw(self, amount: Money, year: int):
         """
         Withdraw up to 'amount' from this corpus.
         For simplicity, we always attempt to withdraw the full amount.
@@ -50,6 +80,8 @@ class Corpus(Aggregate):
         Return the actual withdrawn amount (same as 'amount'
         in this simple version).
         """
+        # if not self.isActive(year):
+        #     raise ValueError(f"Corpus {self.id} is not active in year {year}, hence cannot withdraw")
         self._balance -= amount
 
     def isEnding(self, year: int) -> bool:
@@ -65,7 +97,7 @@ class Corpus(Aggregate):
     def __repr__(self):
         return f"<Corpus {self.id}: balance={self._balance:.2f}>"
 
-    def getAnnualAppreciation(self, year):
-        if not self.isGrowing(year):
-            return Money(0)
+    def _getAnnualAppreciation(self, year):
+        # if not self.isActive(year):
+        #     return Money(0)
         return self._balance * self.growthRate

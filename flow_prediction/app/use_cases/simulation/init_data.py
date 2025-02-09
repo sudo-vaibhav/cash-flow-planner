@@ -1,4 +1,4 @@
-from typing import Optional, TypedDict, List, Union
+from typing import TypedDict, List, Union
 
 
 class AmountReference(TypedDict):
@@ -8,6 +8,7 @@ class AmountReference(TypedDict):
 
 class FundingCorpus(TypedDict):
     id: str
+    startYear: int
 
 
 class Expense(TypedDict):
@@ -19,6 +20,7 @@ class Expense(TypedDict):
     initialValue: AmountReference
     recurringValue: AmountReference
     fundingCorpora: List[FundingCorpus]
+    group: str
 
 
 class Corpus(TypedDict):
@@ -27,7 +29,7 @@ class Corpus(TypedDict):
     startYear: int
     endYear: int
     initialAmount: int
-    successorCorpusId: Union[str,None]
+    successorCorpusId: Union[str, None]
 
 
 class CashflowRecurringValue(TypedDict):
@@ -68,3 +70,5 @@ class CashflowSimulationUseCaseInitData(TypedDict):
     cashflows: List[Cashflow]
     simulation: Simulation
     currency: str
+    fallbackCorpusId: str
+    baseInflation: float

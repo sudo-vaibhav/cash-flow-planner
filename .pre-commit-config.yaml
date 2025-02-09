@@ -1,0 +1,18 @@
+repos:
+  #  - repo: local
+  #    hooks:
+  #      - id: uv-tests
+  #        name: Run uv tests
+  #        entry: uv run pytest
+  #        language: system
+  #        # Optionally, limit the hook to Python files. If you want it to run always,
+  #        # you can remove or adjust the "files" setting.
+  #        files: \.py$
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true

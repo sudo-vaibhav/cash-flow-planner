@@ -1,19 +1,14 @@
-###############################################################################
-# 5. Expense
-###############################################################################
+from typing import List, Tuple, TypedDict, Union
 
-
-from typing import Dict, List, Tuple, TypedDict, Union
-
+from flow_prediction.shared.value_objects import Id, InflationAdjustableValue
 from flow_prediction.shared.value_objects.money import Money
-
 from ..base import Aggregate
 from ..corpus import Corpus
-from flow_prediction.shared.value_objects import Id, InflationAdjustableValue
 
 
 class FundingCorpus(TypedDict):
     id: Id
+    startYear: Union[int, None]
 
 
 class CorporaDeduction(TypedDict):
@@ -39,7 +34,7 @@ class Expense(Aggregate):
         enabled: bool,
         initialValue: InflationAdjustableValue,
         recurringValue: InflationAdjustableValue,
-        fundingCorpora: Union[List[FundingCorpus],None],
+        fundingCorpora: Union[List[FundingCorpus], None],
         corpora: List[Corpus],
         # TODO: account for corpus priority
     ):
@@ -50,9 +45,19 @@ class Expense(Aggregate):
         self.enabled = enabled
         self.initialValue = initialValue
         self.recurringValue = recurringValue
-        self.fundingCorpora: List[FundingCorpus] = fundingCorpora if fundingCorpora is not None else list(map(
-            lambda corpus: {"id": corpus.id}, corpora
-        ))
+        self.fundingCorpora: List[FundingCorpus] = (
+            fundingCorpora
+            if fundingCorpora is not None
+            else list(
+                map(
+                    lambda corpus: {
+                        "id": corpus.id,
+                        startYear: corpus.startYear,
+                    },
+                    corpora,
+                )
+            )
+        )
         self.validate()
 
     def validate(self):
@@ -79,13 +84,18 @@ class Expense(Aggregate):
 
     def getCorporaDeductions(
         self, corpuses: List[Corpus], year
-    ) -> Tuple[List[CorporaDeduction], Union[Corpus,None]]:
+    ) -> Tuple[List[CorporaDeduction], Union[Corpus, None]]:
         if not self.isActive(year):
             return ([], None)
-        violatedCorpus: Union[Corpus,None] = None
+        violatedCorpus: Union[Corpus, None] = None
         amountToBeDeducted = self.getAmountNeeded(year)
         deductions = []
         for fundingCorpus in self.fundingCorpora[:-1]:
+            if (
+                "startYear" in fundingCorpus
+                and fundingCorpus["startYear"] > year
+            ):
+                continue
             corpus = self._getCorpus(corpuses, fundingCorpus["id"])
             corpusDeduction = min(
                 corpus.getBalance(),
@@ -93,13 +103,19 @@ class Expense(Aggregate):
             )
             deductions.append({"corpus": corpus, "deduction": corpusDeduction})
             amountToBeDeducted -= corpusDeduction
-        finalCorpus = self._getCorpus(corpuses, self.fundingCorpora[-1]["id"])
-        if amountToBeDeducted > finalCorpus.getBalance():
+        finalFundingCorpus = self.fundingCorpora[-1]
+        finalCorpus = self._getCorpus(corpuses, finalFundingCorpus["id"])
+        if amountToBeDeducted == 0 or (
+            amountToBeDeducted <= finalCorpus.getBalance()
+            and (
+                "startYear" not in finalFundingCorpus
+                or finalFundingCorpus["startYear"] <= year
+            )
+        ):
+            # deduction can safely happen
+            pass
+        else:
             violatedCorpus = finalCorpus
-            # violatedCorpora.append(
-            #     finalCorpus
-            #     # f"Expense {self.id} in the year {year} overshoots corpora allotment"
-            # )
 
         # deduct any remaining amount from the last corpus, even if it doesn't have enough
         deductions.append(

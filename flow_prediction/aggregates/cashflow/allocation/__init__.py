@@ -28,7 +28,7 @@ class Allocation:
     def validate(self):
         # split should sum to 1
         allocationSum = sum([split["ratio"] for split in self.split])
-        if not allocationSum.quantizedComparison(Decimal(1)):
+        if not allocationSum.isQuantizedEqual(Decimal(1)):
             raise ValueError('Allocation split should sum to 1, current: '+ str(allocationSum))
 
     # def allocate(self):

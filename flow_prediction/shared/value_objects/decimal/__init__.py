@@ -1,13 +1,13 @@
 from decimal import Decimal as BaseDecimal, getcontext, ROUND_HALF_UP
 
-getcontext().prec = 5  # sets precision to 6 significant digits
+getcontext().prec = 28  # sets precision to 6 significant digits
 # target_precision = BaseDecimal('1.000000000000')  # This pattern represents 12 decimal places
 
 class Decimal(BaseDecimal):
     # Define a default target precision (here, two decimal places).
     default_precision = BaseDecimal("0.01")
 
-    def quantizedComparison(self, other, target_precision=None):
+    def isQuantizedEqual(self, other, target_precision=None):
         """
         Compare self and other after quantizing both to a target precision.
 
@@ -27,7 +27,6 @@ class Decimal(BaseDecimal):
         if not isinstance(other, BaseDecimal):
             other = Decimal(other)
         quantized_other = other.quantize(target_precision, rounding=ROUND_HALF_UP)
-        print(quantized_other,quantized_self)
         return quantized_self == quantized_other
 
     def __add__(self, other):
@@ -37,6 +36,8 @@ class Decimal(BaseDecimal):
     def __radd__(self, other):
         result = super().__radd__(other)
         return self.__class__(result)
+
+
 #
 #
 # class Decimal:
