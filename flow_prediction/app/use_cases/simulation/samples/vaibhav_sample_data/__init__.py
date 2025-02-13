@@ -5,7 +5,7 @@ from ...init_data import (
     CashflowSimulationUseCaseInitData,
 )
 
-PARTNER_MONTHLY_SALARY = 37_000  # 74_500
+PARTNER_MONTHLY_SALARY = 94_500
 HOUSE_MONTHLY_RENT = 58_000 + 1000 + 4000  # rent + water + electricity
 CHEAP_HOUSE_MONTHLY_RENT = 30_000 + 1000 + 1000  # rent + water + electricity
 MY_MONTHLY_SALARY = 1_32_000
@@ -39,7 +39,7 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             ],
         },
         {
-            "id": "food",
+            "id": "my food",
             "startYear": 2025,
             "endYear": 2100,
             "enabled": True,
@@ -176,9 +176,9 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             ],
         },
         {
-            "id": "rent-1",
+            "id": "cheaper-house-rent",
             "startYear": 2026,
-            "endYear": 2100,
+            "endYear": 2028,
             "enabled": True,  # True,
             "growthRate": 0.10,
             "initialValue": {
@@ -200,10 +200,10 @@ vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
             ],
         },
         {
-            "id": "rent-2",
+            "id": "comfy-house-rent",
             "startYear": 2029,
             "endYear": 2091,
-            "enabled": False,
+            "enabled": True,
             "growthRate": 0.10,
             "initialValue": {
                 "amount": HOUSE_MONTHLY_RENT * 2,

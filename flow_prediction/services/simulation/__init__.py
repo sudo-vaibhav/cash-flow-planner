@@ -37,16 +37,14 @@ class Warning(ABC):
 
 
 class OvershotCorpusWarning(Warning):
-    def __init__(
-        self, expense_id: str, corpus_id: str, year: int, amount: Money
-    ):
+    def __init__(self, expense_id: str, corpus_id: str, year: int, amount: Money):
         self.corpus_id = corpus_id
         self.year = year
         self.expense_id = expense_id
         self.amount = amount
 
     def __str__(self):
-        return f"Corpus {self.corpus_id} has overshot in year {self.year} due to expense {self.expense_id} by {self.amount}"
+        return f"Corpus {self.corpus_id} has overshot in year {self.year} due to expense {self.expense_id} by {self.amount.format()}"
 
 
 class CashflowSimulationService:
@@ -66,9 +64,7 @@ class CashflowSimulationService:
         return None
 
     @staticmethod
-    def _overshotCorpusWarningAlreadyExists(
-        warnings: List[Warning], corpus: Corpus
-    ):
+    def _overshotCorpusWarningAlreadyExists(warnings: List[Warning], corpus: Corpus):
         for warning in warnings:
 
             if (
@@ -81,9 +77,7 @@ class CashflowSimulationService:
     def simulate(self) -> SimulationResponse:
         simulationResults: List[SimulationAnnualResult] = []
         warnings: List[Warning] = []
-        for year in range(
-            self.simulation["startYear"], self.simulation["endYear"] + 1
-        ):
+        for year in range(self.simulation["startYear"], self.simulation["endYear"] + 1):
             simulationResult = {
                 "corpora": [],
                 "year": year,
@@ -92,9 +86,7 @@ class CashflowSimulationService:
 
             self.appreciateCorpora(year)
 
-            simulationResult["cashflowAllocations"].extend(
-                self.allocateCashflows(year)
-            )
+            simulationResult["cashflowAllocations"].extend(self.allocateCashflows(year))
 
             warningsFromDeductions = self.deductExpensesFromCorpora(year)
             warnings.extend(warningsFromDeductions)

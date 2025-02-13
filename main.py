@@ -100,9 +100,19 @@ else:
     col1.write("## Expenses")
     for expense in v["expenses"]:
         if expense["enabled"]:
-            col1.success(f"{expense["id"]} (enabled)")
+            col1.success(
+                f"""**{expense["id"]} (from {expense["startYear"]} to {expense["endYear"]})**\n\n---\n\n
+Initial Cost: {expense["initialValue"]["amount"]}\n
+Recurring Cost: {expense["recurringValue"]["amount"]} (or {expense["recurringValue"]["amount"]/12} per month)
+"""
+            )
+
         if not expense["enabled"]:
-            col1.error(f"{expense["id"]} (disabled)")
+            col1.error(
+                f"""**{expense["id"]} (disabled)**\n
+Initial Cost: {expense["initialValue"]["amount"]}\n
+Recurring Cost: {expense["recurringValue"]["amount"]}"""
+            )
     #
     col2.write("## Allocations")
     yearUnderAnalysis = col2.selectbox(options=applicableYears, label="Year")

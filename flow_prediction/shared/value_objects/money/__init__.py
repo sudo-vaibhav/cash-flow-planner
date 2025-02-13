@@ -1,7 +1,7 @@
 from typing import Union
+
 from moneyed import Money as MoneyedMoney, format_money
 
-# import decimal
 from ..decimal import Decimal
 
 
@@ -12,7 +12,7 @@ class Money(MoneyedMoney):
         super().__init__(amount, currency)
 
     def format(self):
-        return format_money(self, locale="en_IN")
+        return format_money(self, locale="en_IN", format_type="standard")
 
     def isQuantizedEqual(self, other: "Money"):
         return Decimal(self.amount).isQuantizedEqual(Decimal(other.amount))
