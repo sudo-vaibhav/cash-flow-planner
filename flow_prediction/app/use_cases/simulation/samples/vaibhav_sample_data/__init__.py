@@ -5,7 +5,7 @@ from ...init_data import (
     CashflowSimulationUseCaseInitData,
 )
 
-PARTNER_MONTHLY_SALARY = 94_500
+PARTNER_MONTHLY_SALARY = 74_500
 HOUSE_MONTHLY_RENT = 58_000 + 1000 + 4000  # rent + water + electricity
 CHEAP_HOUSE_MONTHLY_RENT = 30_000 + 1000 + 1000  # rent + water + electricity
 MY_MONTHLY_SALARY = 1_32_000
@@ -16,15 +16,33 @@ PARTNER_PF_CONTRIBUTION = (
     PARTNER_MONTHLY_SALARY * 0.5 * 0.24
 )  # assuming 50% of in hand is basic, not considering tax as tax on first 12.5 lakh is exempt.
 # 24% assuming 12% matching from employer
-RETIREMENT_YEAR = 2056
+RETIREMENT_YEAR = 2061
 PARENTS_SUPPORT_END_YEAR = 2040
 vaibhav_sample_data: CashflowSimulationUseCaseInitData = {
     "expenses": [
         {
+            "id": "car",
+            "startYear": 2028,
+            "endYear": 2055,
+            "enabled": True,
+            "growthRate": 0.05,
+            "initialValue": {
+                "amount": 10_00_000,
+                "referenceTime": 2025,
+            },
+            # "group": "car",
+            "recurringValue": {"amount": 10_000 * 12, "referenceTime": 2025},
+            "fundingCorpora": [
+                {
+                    "id": "microsoft-stock",
+                }
+            ],
+        },
+        {
             "id": "marriage",
             "startYear": 2028,
             "endYear": 2028,
-            "enabled": True,
+            "enabled": False,
             "growthRate": 0.09,
             "initialValue": {
                 "amount": MARRIAGE_COST,
