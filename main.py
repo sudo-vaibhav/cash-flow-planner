@@ -46,7 +46,7 @@ def prepare_corpus_df(simulation):
     return pd.DataFrame(corpus_info)
 
 
-def expense_editor(expenses):
+def expense_editor(expenses, corpora):
     """
     Display a form where the user can select an expense (or add a new one)
     and update its properties (enabled, start/end years, initial and recurring values).
@@ -54,7 +54,7 @@ def expense_editor(expenses):
     """
     st.header("Expense Editor")
     expense_ids = [exp["id"] for exp in expenses]
-    option = st.selectbox(
+    expense_id = st.selectbox(
         "Select Expense to Edit", options=["Add New Expense"] + expense_ids
     )
 
@@ -70,11 +70,11 @@ def expense_editor(expenses):
         "fundingCorpora": [],
     }
 
-    if option == "Add New Expense":
+    if expense_id == "Add New Expense":
         expense = default_expense.copy()
         is_new = True
     else:
-        expense = next(exp for exp in expenses if exp["id"] == option)
+        expense = next(exp for exp in expenses if exp["id"] == expense_id)
         is_new = False
 
     with st.form("expense_form"):
@@ -112,6 +112,11 @@ def expense_editor(expenses):
             value=expense.get("recurringValue", {}).get("amount", 0),
             step=1000,
         )
+        funding_corpora = st.multiselect(
+            "Funding Corpora",
+            default=map(lambda x: x["id"], expense.get("fundingCorpora", [])),
+            options=[corp["id"] for corp in corpora],
+        )
         submitted = st.form_submit_button("Save Expense")
 
     if submitted:
@@ -124,7 +129,7 @@ def expense_editor(expenses):
             "initialValue": {"amount": initial_value, "referenceTime": 2025},
             "recurringValue": {"amount": recurring_value, "referenceTime": 2025},
             # We leave fundingCorpora unchanged (or empty for a new expense)
-            "fundingCorpora": expense.get("fundingCorpora", []),
+            "fundingCorpora": map(lambda x: {"id": x}, funding_corpora),
         }
         if is_new:
             expenses.append(updated_expense)
@@ -132,11 +137,85 @@ def expense_editor(expenses):
         else:
             # Update the selected expense
             for i, exp in enumerate(expenses):
-                if exp["id"] == option:
+                if exp["id"] == expense_id:
                     expenses[i] = updated_expense
                     break
             st.success(f"Updated expense '{expense_id}'.")
     return expenses
+
+
+def corpora_editor(corpora):
+    st.header("Corpora Editor")
+    corpus_ids = [corp["id"] for corp in corpora]
+    corpus_id = st.selectbox(
+        "Select Corpus to Edit", options=["Add New Corpus"] + corpus_ids
+    )
+
+    # Prepare a default corpus template.
+    default_corpus = {
+        "id": "",
+        "growthRate": 0.00,
+        "startYear": 2025,
+        "endYear": 2100,
+        "initialAmount": 0,
+    }
+
+    if corpus_id == "Add New Corpus":
+        corpus = default_corpus.copy()
+        is_new = True
+    else:
+        corpus = next(corp for corp in corpora if corp["id"] == corpus_id)
+        is_new = False
+    with st.form("corpus_form"):
+        corpus_id = st.text_input("Corpus ID", value=corpus.get("id", ""))
+        growth_rate = st.number_input(
+            "Growth Rate",
+            min_value=0.0,
+            max_value=10.0,
+            value=corpus.get("growthRate", 0.0),
+            step=0.01,
+            format="%.2f",
+        )
+        start_year = st.number_input(
+            "Start Year",
+            min_value=1900,
+            max_value=3000,
+            value=corpus.get("startYear", 2025),
+            step=1,
+        )
+        end_year = st.number_input(
+            "End Year",
+            min_value=1900,
+            max_value=3000,
+            value=corpus.get("endYear", 2100),
+            step=1,
+        )
+        initial_amount = st.number_input(
+            "Initial Amount",
+            value=corpus.get("initialAmount", 0),
+            step=1000,
+        )
+        submitted = st.form_submit_button("Save Corpus")
+    if submitted:
+        updated_corpus = {
+            "id": corpus_id,
+            "growthRate": growth_rate,
+            "startYear": int(start_year),
+            "endYear": int(end_year),
+            "initialAmount": initial_amount,
+        }
+        if is_new:
+            corpora.append(updated_corpus)
+            st.success(f"Added new corpus '{corpus_id}'.")
+        else:
+            # Update the selected corpus
+            for i, corp in enumerate(corpora):
+                if corp["id"] == corpus_id:
+                    corpora[i] = updated_corpus
+                    break
+            st.success(f"Updated corpus '{corpus_id}'.")
+
+    return corpora
 
 
 # ------------------------------------------------------------------------------
@@ -150,10 +229,14 @@ def main():
 
     # Use the sample data as a baseline.
     data = vaibhav_sample_data.copy()  # note: adjust if a deep copy is needed
-
-    # Allow the user to update the expenses via the expense editor.
-    data["expenses"] = expense_editor(data.get("expenses", []))
-
+    formCol1, formCol2 = st.columns(2)
+    with formCol1:
+        # Allow the user to update the expenses via the expense editor.
+        data["expenses"] = expense_editor(
+            data.get("expenses", []), data.get("corpora", [])
+        )
+    with formCol2:
+        data["corpora"] = corpora_editor(data.get("corpora", []))
     # Run the simulation with the current (possibly modified) sample data.
     simulation_result = run_simulation(data)
     simulation = simulation_result.get("simulation", [])
