@@ -10,6 +10,19 @@ from flow_prediction.app.use_cases.simulation.samples.vaibhav_sample_data import
 )
 
 
+def getSessionData():
+    if "data" not in st.session_state:
+        st.session_state["data"] = vaibhav_sample_data
+    return st.session_state["data"]
+
+
+def mutateSessionData(data: dict):
+    st.session_state["data"] = {
+        **st.session_state["data"],
+        **data,
+    }
+
+
 # ------------------------------------------------------------------------------
 # Helper Functions
 # ------------------------------------------------------------------------------
@@ -113,7 +126,8 @@ def expense_editor(expenses, corpora):
             expenses.append(updated_expense)
             st.toast(f"Added new expense '{expense_id}'.")
 
-        st.session_state["data"]["expenses"] = expenses
+        # st.session_state["data"]["expenses"] = expenses
+        mutateSessionData({"expenses": expenses})
     # return expenses
 
 
@@ -207,12 +221,13 @@ def cashFlowEditor(cashflows):
     with st.form("allocation_form"):
         cashflow = st.selectbox(
             "Select Cashflow to Edit Allocations",
-            options=list(map(lambda x: x["id"], cashflows)) + ["Add New Cashflow"],
+            options=["Add New Cashflow"] + list(map(lambda x: x["id"], cashflows)),
         )
+
         cashflowSetting = st.text_area(
             label="Cashflow Settings",
             value=json.dumps(
-                next(cf for cf in cashflows if cf["id"] == cashflow),
+                next((cf for cf in cashflows if cf["id"] == cashflow), {})
             ),
         )
         submitted = st.form_submit_button("Save Allocations")
@@ -227,172 +242,11 @@ def cashFlowEditor(cashflows):
             cashflows.append(updated_cashflow)
             st.toast(f"Added new cashflow '{updated_cashflow['id']}'.")
         st.session_state["data"]["cashflows"] = cashflows
-        updated_allocations = []
-        #
-        # # Iterate over existing allocation periods.
-        # for i, alloc in enumerate(current_allocations):
-        #     st.subheader(f"Allocation Period {i+1}")
-        #     # Add a checkbox to allow deletion of this allocation period.
-        #     delete_alloc = st.checkbox(
-        #         "Delete this allocation period?", key=f"delete_alloc_{i}"
-        #     )
-        #     if delete_alloc:
-        #         st.warning("Allocation period marked for deletion.")
-        #         continue  # Skip adding this allocation period.
-        #
-        #     start_year = st.number_input(
-        #         f"Start Year (Allocation {i+1})",
-        #         min_value=1900,
-        #         max_value=3000,
-        #         value=alloc.get("startYear", 2025),
-        #         step=1,
-        #         key=f"alloc_start_{i}",
-        #     )
-        #     end_year = st.number_input(
-        #         f"End Year (Allocation {i+1})",
-        #         min_value=1900,
-        #         max_value=3000,
-        #         value=alloc.get("endYear", 2100),
-        #         step=1,
-        #         key=f"alloc_end_{i}",
-        #     )
-        #
-        #     updated_splits = []
-        #     splits = alloc.get("split", [])
-        #     st.markdown("**Splits for this allocation period**")
-        #     # Iterate over each existing split.
-        #     for j, split in enumerate(splits):
-        #         col1, col2, col3 = st.columns([3, 3, 1])
-        #         with col1:
-        #             corpus_options = [corp["id"] for corp in corpora]
-        #             try:
-        #                 default_idx = corpus_options.index(split.get("corpusId"))
-        #             except ValueError:
-        #                 default_idx = 0
-        #             corpus_selected = st.selectbox(
-        #                 f"Corpus (Split {j+1})",
-        #                 options=corpus_options,
-        #                 index=default_idx,
-        #                 key=f"split_corpus_{i}_{j}",
-        #             )
-        #         with col2:
-        #             ratio = st.number_input(
-        #                 f"Ratio (Split {j+1})",
-        #                 min_value=0.0,
-        #                 max_value=1.0,
-        #                 step=0.01,
-        #                 format="%.2f",
-        #                 value=split.get("ratio", 0.0),
-        #                 key=f"split_ratio_{i}_{j}",
-        #             )
-        #         with col3:
-        #             delete_split = st.checkbox("Delete", key=f"delete_split_{i}_{j}")
-        #         if not delete_split:
-        #             updated_splits.append({"corpusId": corpus_selected, "ratio": ratio})
-        #         else:
-        #             st.info(f"Split {j+1} marked for deletion.")
-        #
-        #     # Option to add one more split for this allocation period.
-        #     add_new_split = st.checkbox(
-        #         f"Add a new split to Allocation Period {i+1}?", key=f"add_new_split_{i}"
-        #     )
-        #     if add_new_split:
-        #         col1, col2 = st.columns(2)
-        #         with col1:
-        #             corpus_options = [corp["id"] for corp in corpora]
-        #             new_corpus = st.selectbox(
-        #                 "New Split Corpus",
-        #                 options=corpus_options,
-        #                 key=f"new_split_corpus_{i}",
-        #             )
-        #         with col2:
-        #             new_ratio = st.number_input(
-        #                 "New Split Ratio",
-        #                 min_value=0.0,
-        #                 max_value=1.0,
-        #                 step=0.01,
-        #                 format="%.2f",
-        #                 value=0.0,
-        #                 key=f"new_split_ratio_{i}",
-        #             )
-        #         updated_splits.append({"corpusId": new_corpus, "ratio": new_ratio})
-        #
-        #     updated_allocations.append(
-        #         {
-        #             "startYear": int(start_year),
-        #             "endYear": int(end_year),
-        #             "split": updated_splits,
-        #         }
-        #     )
-
-        # Option to add a completely new allocation period.
-    #     add_new_alloc = st.checkbox("Add a new allocation period", key="add_new_alloc")
-    #     if add_new_alloc:
-    #         new_alloc_start = st.number_input(
-    #             "New Allocation Start Year",
-    #             min_value=1900,
-    #             max_value=3000,
-    #             value=2025,
-    #             step=1,
-    #             key="new_alloc_start",
-    #         )
-    #         new_alloc_end = st.number_input(
-    #             "New Allocation End Year",
-    #             min_value=1900,
-    #             max_value=3000,
-    #             value=2100,
-    #             step=1,
-    #             key="new_alloc_end",
-    #         )
-    #         st.markdown("**New Allocation Splits**")
-    #         col1, col2 = st.columns(2)
-    #         with col1:
-    #             corpus_options = [corp["id"] for corp in corpora]
-    #             new_alloc_corpus = st.selectbox(
-    #                 "New Allocation Split Corpus",
-    #                 options=corpus_options,
-    #                 key="new_alloc_corpus",
-    #             )
-    #         with col2:
-    #             new_alloc_ratio = st.number_input(
-    #                 "New Allocation Split Ratio",
-    #                 min_value=0.0,
-    #                 max_value=1.0,
-    #                 step=0.01,
-    #                 format="%.2f",
-    #                 value=1.0,
-    #                 key="new_alloc_ratio",
-    #             )
-    #         new_alloc_splits = [
-    #             {"corpusId": new_alloc_corpus, "ratio": new_alloc_ratio}
-    #         ]
-    #         updated_allocations.append(
-    #             {
-    #                 "startYear": int(new_alloc_start),
-    #                 "endYear": int(new_alloc_end),
-    #                 "split": new_alloc_splits,
-    #             }
-    #         )
-    #
-    #     submitted = st.form_submit_button("Save Allocations")
-    #
-    # if submitted:
-    #     # Update the selected cashflow's allocations.
-    #     for cf in cashflows:
-    #         if cf["id"] == selected_cf_id:
-    #             cf["allocations"] = updated_allocations
-    #             st.success(f"Updated allocations for cashflow '{selected_cf_id}'")
-    #             break
-    #
-    # return cashflows
 
 
 # ------------------------------------------------------------------------------
 # Main App
 # ------------------------------------------------------------------------------
-
-if "data" not in st.session_state:
-    st.session_state["data"] = vaibhav_sample_data
 
 
 def main():
@@ -401,7 +255,7 @@ def main():
 
     # Use the sample data as a baseline.
     data = st.session_state.get("data")  # note: adjust if a deep copy is needed
-    # new_data = data.copy()
+
     formCol1, formCol2 = st.columns(2)
     with formCol1:
         # Allow the user to update the expenses via the expense editor.
@@ -562,19 +416,41 @@ def main():
 
 
 def showExpenses(data):
-    # Expenses display.
     st.write("## Expenses")
-    for expense in data["expenses"]:
-        content = f"""**{expense["id"]} ({"enabled" if expense["enabled"] else "disabled"}) (from {expense["startYear"]} to {expense["endYear"]})**  
+    for expenseIdx, expense in enumerate(data["expenses"]):
+        # Create two columns: one for the content and one for the button.
+        col_text, col_button = st.columns([3, 1])
+
+        with col_text:
+            content = f"""**{expense["id"]} ({"enabled" if expense["enabled"] else "disabled"}) (from {expense["startYear"]} to {expense["endYear"]})**  
 Initial Cost: {expense["initialValue"]["amount"]}  
 Recurring Cost: {expense["recurringValue"]["amount"]} (≈ {expense["recurringValue"]["amount"] / 12:.2f} per month)\n
 Growth Rate: {expense["growthRate"]}\n
 Funding: {", ".join(corp["id"] for corp in expense["fundingCorpora"])}
-                """
-        if expense["enabled"]:
-            st.success(content)
-        else:
-            st.error(content)
+            """
+            if expense["enabled"]:
+                st.success(content)
+            else:
+                st.error(content)
+
+        with col_button:
+            # Display a single button based on the current state.
+            if expense["enabled"]:
+                st.button(
+                    "Disable",
+                    key=f"disable-{expense['id']}",
+                    on_click=lambda: setExpenseEnabled(expenseIdx, False),
+                )
+            else:
+                st.button(
+                    "Enable",
+                    key=f"enable-{expense['id']}",
+                    on_click=lambda: setExpenseEnabled(expenseIdx, True),
+                )
+
+
+def setExpenseEnabled(expenseIdx, enabled):
+    st.session_state["data"]["expenses"][expenseIdx]["enabled"] = enabled
 
 
 if __name__ == "__main__":
