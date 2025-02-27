@@ -2,9 +2,8 @@ import pytest
 
 from flow_prediction.shared.value_objects import InflationAdjustableValue, Id
 from flow_prediction.shared.value_objects.money import Money
-
 # Adjust the following import to your project’s structure.
-from .. import Expense
+from .. import Expense, FundingCorpus
 
 
 # =============================================================================
@@ -38,6 +37,13 @@ class FakeCorpus:
     def getBalance(self) -> Money:
         return Money(self._balance)
 
+    def __eq__(self, other):
+        return (
+            isinstance(other, FakeCorpus)
+            and self.id == other.id
+            and self._balance == other._balance
+        )
+
 
 # =============================================================================
 # Tests for Expense
@@ -54,7 +60,7 @@ def test_validate_empty_funding_corpora():
     corpus = FakeCorpus("c1", 100)
     with pytest.raises(ValueError, match="has no funding corpora"):
         Expense(
-            id="exp1",
+            id=Id("exp1"),
             startYear=2025,
             endYear=2030,
             enabled=True,
@@ -73,9 +79,9 @@ def test_isActive():
     initial = FakeInflationAdjustableValue({2025: 50})
     recurring = FakeInflationAdjustableValue({2025: 5})
     corpus = FakeCorpus("c1", 100)
-    funding = [{"id": "c1", "startYear": 2025}]
+    funding = [FundingCorpus(Id("c1"), startYear=2025, forInitialOnly=False)]
     expense = Expense(
-        id="exp1",
+        id=Id("exp1"),
         startYear=2025,
         endYear=2030,
         enabled=True,
@@ -92,7 +98,7 @@ def test_isActive():
 
     # Disabled expense is never active.
     expense_disabled = Expense(
-        id="exp2",
+        id=Id("exp2"),
         startYear=2025,
         endYear=2030,
         enabled=False,
@@ -106,14 +112,16 @@ def test_isActive():
 
 def test_getAmountNeeded_inactive():
     """
-    When the expense is inactive, getAmountNeeded should return Money(0).
+    For a disabled expense on its start year, the new behavior is that:
+      - getInitialAmountNeeded returns the initial value (since it only checks the year)
+      - getRecurringAmountNeeded returns Money(0) (because the expense is not active)
     """
     initial = FakeInflationAdjustableValue({2025: 100})
     recurring = FakeInflationAdjustableValue({2025: 10})
     corpus = FakeCorpus("c1", 100)
-    funding = [{"id": "c1", "startYear": 2025}]
+    funding = [FundingCorpus(Id("c1"), startYear=2025, forInitialOnly=False)]
     expense = Expense(
-        id="exp1",
+        id=Id("exp1"),
         startYear=2025,
         endYear=2030,
         enabled=False,  # disabled expense
@@ -122,22 +130,24 @@ def test_getAmountNeeded_inactive():
         fundingCorpora=funding,
         corpora=[corpus],
     )
-    amount = expense.getAmountNeeded(2025)
-    assert amount == Money(0)
+    assert expense.getInitialAmountNeeded(2025) == Money(100)
+    assert expense.getRecurringAmountNeeded(2025) == Money(0)
 
 
 def test_getAmountNeeded_start_year():
     """
-    On the start year, getAmountNeeded should sum the initial and recurring values.
+    On the start year of an enabled expense:
+      - getInitialAmountNeeded returns the initial value
+      - getRecurringAmountNeeded returns the recurring value
     For example, if initialValue(2025)=100 and recurringValue(2025)=10,
-    then the needed amount is 110.
+    then the combined needed amount is 110.
     """
     initial = FakeInflationAdjustableValue({2025: 100})
     recurring = FakeInflationAdjustableValue({2025: 10})
     corpus = FakeCorpus("c1", 200)
-    funding = [{"id": "c1", "startYear": 2025}]
+    funding = [FundingCorpus(Id("c1"), startYear=2025, forInitialOnly=False)]
     expense = Expense(
-        id="exp1",
+        id=Id("exp1"),
         startYear=2025,
         endYear=2030,
         enabled=True,
@@ -146,9 +156,11 @@ def test_getAmountNeeded_start_year():
         fundingCorpora=funding,
         corpora=[corpus],
     )
-    amount = expense.getAmountNeeded(2025)
-    # Expected: initial + recurring = Money(100) + Money(10) = Money(110)
-    assert amount == Money(110)
+    total_needed = expense.getInitialAmountNeeded(
+        2025
+    ) + expense.getRecurringAmountNeeded(2025)
+    # Expected: 100 + 10 = 110
+    assert total_needed == Money(110)
 
 
 def test_getAmountNeeded_non_start_year():
@@ -159,9 +171,9 @@ def test_getAmountNeeded_non_start_year():
     initial = FakeInflationAdjustableValue({2025: 100, 2026: 100})
     recurring = FakeInflationAdjustableValue({2026: 20})
     corpus = FakeCorpus("c1", 200)
-    funding = [{"id": "c1", "startYear": 2025}]
+    funding = [FundingCorpus(Id("c1"), startYear=2025, forInitialOnly=False)]
     expense = Expense(
-        id="exp1",
+        id=Id("exp1"),
         startYear=2025,
         endYear=2030,
         enabled=True,
@@ -170,9 +182,11 @@ def test_getAmountNeeded_non_start_year():
         fundingCorpora=funding,
         corpora=[corpus],
     )
-    amount = expense.getAmountNeeded(2026)
-    # Expected: Money(0) from initial (since not start year) + Money(20)
-    assert amount == Money(20)
+    total_needed = expense.getInitialAmountNeeded(
+        2026
+    ) + expense.getRecurringAmountNeeded(2026)
+    # Expected: initial is 0 in non-start year, recurring is 20.
+    assert total_needed == Money(20)
 
 
 def test_getCorporaDeductions_inactive():
@@ -182,9 +196,9 @@ def test_getCorporaDeductions_inactive():
     initial = FakeInflationAdjustableValue({2025: 100})
     recurring = FakeInflationAdjustableValue({2025: 10})
     corpus = FakeCorpus("c1", 200)
-    funding = [{"id": "c1", "startYear": 2025}]
+    funding = [FundingCorpus(Id("c1"), startYear=2025, forInitialOnly=False)]
     expense = Expense(
-        id="exp1",
+        id=Id("exp1"),
         startYear=2025,
         endYear=2030,
         enabled=False,  # inactive
@@ -200,19 +214,26 @@ def test_getCorporaDeductions_inactive():
 
 def test_getCorporaDeductions_normal():
     """
-    For an active expense where:
-      - In the start year, initialValue=20 and recurringValue=30 (total needed = 50).
-      - Two funding corpora: corpus "c1" with balance 30, corpus "c2" with balance 40.
-    The first funding corpus should contribute Money(30) and the final corpus Money(20).
+    For an active expense in the start year with:
+      - initialValue=20 and recurringValue=30 (total needed = 50),
+      - Two funding corpora (corpus "c1" and corpus "c2").
+    With the new two-loop deduction process, the non-final funding corpus (corpus1)
+    is used in both the initial and recurring loops. In this configuration:
+      - In the initial loop, corpus1 contributes min(Money(30), Money(20)) = Money(20)
+      - In the recurring loop, corpus1 contributes min(Money(30), Money(30)) = Money(30)
+      - The final funding corpus (corpus2) then gets the remaining 0.
     No violation should be flagged.
     """
     initial = FakeInflationAdjustableValue({2025: 20})
     recurring = FakeInflationAdjustableValue({2025: 30})
     corpus1 = FakeCorpus("c1", 30)
     corpus2 = FakeCorpus("c2", 40)
-    funding = [{"id": "c1"}, {"id": "c2"}]
+    funding = [
+        FundingCorpus(Id("c1"), startYear=None, forInitialOnly=False),
+        FundingCorpus(Id("c2"), startYear=None, forInitialOnly=False),
+    ]
     expense = Expense(
-        id="exp1",
+        id=Id("exp1"),
         startYear=2025,
         endYear=2030,
         enabled=True,
@@ -223,34 +244,39 @@ def test_getCorporaDeductions_normal():
     )
     deductions, violated = expense.getCorporaDeductions([corpus1, corpus2], 2025)
 
-    # Expect first deduction: min(Money(30), Money(50)) = Money(30)
-    # Remaining: Money(20) from corpus2.
-    assert len(deductions) == 2
+    # Expected deductions according to the new implementation:
+    # 1. From corpus1 in the initial loop: Money(20)
+    # 2. From corpus1 in the recurring loop: Money(30)
+    # 3. From corpus2 (final corpus): Money(0)
+    assert len(deductions) == 3
     assert deductions[0]["corpus"] == corpus1
-    assert deductions[0]["deduction"] == Money(30)
-    assert deductions[1]["corpus"] == corpus2
-    assert deductions[1]["deduction"] == Money(20)
+    assert deductions[0]["deduction"] == Money(20)
+    assert deductions[1]["corpus"] == corpus1
+    assert deductions[1]["deduction"] == Money(30)
+    assert deductions[2]["corpus"] == corpus2
+    assert deductions[2]["deduction"] == Money(0)
     assert violated is None
 
 
 def test_getCorporaDeductions_violation():
     """
-    When the final funding corpus does not have sufficient balance,
-    the method should still add the final deduction but also flag a violation.
-    For example, if:
-      - Total needed = Money(50) (from initial=20 and recurring=30),
-      - corpus "c1" provides Money(30),
-      - corpus "c2" has balance Money(10),
-    then after corpus "c1" the remaining amount is Money(20), which exceeds corpus "c2" balance.
-    The final deduction is Money(20) and corpus "c2" is flagged as violated.
+    When the non-final funding corpora are skipped (using startYear restrictions),
+    the entire amount (initial + recurring) falls on the final funding corpus.
+    If that corpus’s balance is insufficient, a ValueError should be raised.
+    For example, if total needed is Money(50) but the final corpus has only Money(10),
+    then a ValueError is raised.
     """
     initial = FakeInflationAdjustableValue({2025: 20})
     recurring = FakeInflationAdjustableValue({2025: 30})
-    corpus1 = FakeCorpus("c1", 30)
-    corpus2 = FakeCorpus("c2", 10)
-    funding = [{"id": "c1"}, {"id": "c2"}]
+    # The first funding corpus is skipped because its startYear is in the future.
+    corpus1 = FakeCorpus("c1", 100)
+    corpus2 = FakeCorpus("c2", 10)  # insufficient balance for final corpus
+    funding = [
+        FundingCorpus(Id("c1"), startYear=2030, forInitialOnly=False),
+        FundingCorpus(Id("c2"), startYear=None, forInitialOnly=False),
+    ]
     expense = Expense(
-        id="exp1",
+        id=Id("exp1"),
         startYear=2025,
         endYear=2030,
         enabled=True,
@@ -259,37 +285,29 @@ def test_getCorporaDeductions_violation():
         fundingCorpora=funding,
         corpora=[corpus1, corpus2],
     )
-    deductions, violated = expense.getCorporaDeductions([corpus1, corpus2], 2025)
-    assert len(deductions) == 2
-    # corpus "c1" provides Money(30)
-    assert deductions[0]["corpus"] == corpus1
-    assert deductions[0]["deduction"] == Money(30)
-    # Final funding corpus "c2" is used for the remaining Money(20)
-    assert deductions[1]["corpus"] == corpus2
-    assert deductions[1]["deduction"] == Money(20)
-    # Since corpus "c2" had only Money(10) available, it is flagged as violated.
-    assert violated == corpus2
+    with pytest.raises(ValueError, match="doesn't have"):
+        expense.getCorporaDeductions([corpus1, corpus2], 2025)
 
 
 def test_getCorporaDeductions_with_startYear_skip():
     """
     If a funding corpus has a startYear later than the current year,
-    it should be skipped. Only the final funding corpus (which has no startYear restriction)
-    should be used.
-    For example, if:
-      - Total needed = Money(50) (from initial=20 and recurring=30) in year 2025,
-      - Funding corpora: first corpus "c1" with startYear=2030 (skipped) and final corpus "c2" (used),
-      - corpus "c2" has sufficient balance,
-    then only corpus "c2" is used for the full amount.
+    it should be skipped. Only the final funding corpus (with no startYear restriction)
+    will be used to cover the full amount.
+    For example, if total needed is Money(50) in 2025 and the first funding corpus is
+    skipped, then corpus "c2" should cover the entire amount.
     """
     initial = FakeInflationAdjustableValue({2025: 20})
     recurring = FakeInflationAdjustableValue({2025: 30})
     corpus1 = FakeCorpus("c1", 30)
     corpus2 = FakeCorpus("c2", 60)
-    # Note: "c1" has a startYear of 2030, so in year 2025 it will be skipped.
-    funding = [{"id": "c1", "startYear": 2030}, {"id": "c2"}]
+    # "c1" has a startYear of 2030, so it will be skipped in 2025.
+    funding = [
+        FundingCorpus(Id("c1"), startYear=2030, forInitialOnly=False),
+        FundingCorpus(Id("c2"), startYear=None, forInitialOnly=False),
+    ]
     expense = Expense(
-        id="exp1",
+        id=Id("exp1"),
         startYear=2025,
         endYear=2030,
         enabled=True,

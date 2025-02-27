@@ -1,3 +1,6 @@
+from typing import List
+
+
 class Lease:
     """
     Defines how a single Cashflow is split among multiple corpora over time.

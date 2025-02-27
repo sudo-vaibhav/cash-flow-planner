@@ -1,5 +1,6 @@
 from typing import Sequence, TypedDict
-from flow_prediction.shared.value_objects import Id,Decimal
+
+from flow_prediction.shared.value_objects import Id, Decimal
 
 
 class AllocationSplit(TypedDict):
@@ -21,15 +22,17 @@ class Allocation:
         self.validate()
 
     def overlaps(self, other):
-        return (
-            self.startYear <= other.endYear and other.startYear <= self.endYear
-        )
+        return self.startYear <= other.endYear and other.startYear <= self.endYear
 
     def validate(self):
         # split should sum to 1
         allocationSum = sum([split["ratio"] for split in self.split])
         if not allocationSum.isQuantizedEqual(Decimal(1)):
-            raise ValueError('Allocation split should sum to 1, current: '+ str(allocationSum))
+            sumBetween = ",".join([split["corpusId"] for split in self.split])
+            raise ValueError(
+                f"Allocation split between {sumBetween} should sum to 1, current: "
+                + str(allocationSum)
+            )
 
     # def allocate(self):
     #     pass

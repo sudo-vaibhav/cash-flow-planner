@@ -1,6 +1,7 @@
 from typing import List, TypedDict
+
+from flow_prediction.shared.value_objects import InflationAdjustableValue, Money, Id
 from .allocation import Allocation
-from flow_prediction.shared.value_objects import InflationAdjustableValue, Id
 from ..base import Aggregate
 
 
@@ -67,6 +68,8 @@ class Cashflow(Aggregate):
         return None
 
     def getAmount(self, year: int):
+        if not self.is_active(year):
+            return Money(0)
         return self.recurringValue.getAmount(year)
 
 

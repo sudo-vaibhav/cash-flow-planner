@@ -78,6 +78,7 @@ name = "cash-flow-planner"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "jinja2" },
     { name = "py-moneyed" },
     { name = "streamlit" },
 ]
@@ -91,6 +92,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "jinja2", specifier = ">=3.1.5" },
     { name = "py-moneyed", specifier = ">=3.0" },
     { name = "streamlit", specifier = ">=1.42.0" },
 ]

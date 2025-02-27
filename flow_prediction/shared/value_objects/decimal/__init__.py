@@ -3,6 +3,7 @@ from decimal import Decimal as BaseDecimal, getcontext, ROUND_HALF_UP
 getcontext().prec = 28  # sets precision to 6 significant digits
 # target_precision = BaseDecimal('1.000000000000')  # This pattern represents 12 decimal places
 
+
 class Decimal(BaseDecimal):
     # Define a default target precision (here, two decimal places).
     default_precision = BaseDecimal("0.01")
@@ -57,7 +58,7 @@ class Decimal(BaseDecimal):
 #         return Decimal(self._value * DecimalLib(other))
 #     def __truediv__(self, other):
 #         return Decimal(self._value / DecimalLib(other))
-#     def __init__(self, value):
+#     def __init__.py(self, value):
 #         if isinstance(value, DecimalLib):
 #             self._value = value
 #         else:

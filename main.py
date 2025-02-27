@@ -5,20 +5,18 @@ import pandas as pd
 import streamlit as st
 
 from flow_prediction.app.use_cases.simulation import CashflowSimulationUseCase
-from flow_prediction.app.use_cases.simulation.samples.vaibhav_sample_data import (
-    vaibhav_sample_data,
-)
+from flow_prediction.app.use_cases.simulation.samples import bachelor_for_life
 
 
 def getSessionData():
     if "data" not in st.session_state:
-        st.session_state["data"] = vaibhav_sample_data
+        st.session_state["data"] = bachelor_for_life
     return st.session_state["data"]
 
 
 def mutateSessionData(data: dict):
     st.session_state["data"] = {
-        **st.session_state["data"],
+        **getSessionData(),
         **data,
     }
 
@@ -126,7 +124,6 @@ def expense_editor(expenses, corpora):
             expenses.append(updated_expense)
             st.toast(f"Added new expense '{expense_id}'.")
 
-        # st.session_state["data"]["expenses"] = expenses
         mutateSessionData({"expenses": expenses})
     # return expenses
 
@@ -134,9 +131,6 @@ def expense_editor(expenses, corpora):
 def corpora_editor(corpora):
     st.header("Corpora Editor")
     corpus_ids = [corp["id"] for corp in corpora]
-    # corpus_id = st.selectbox(
-    #     "Select Corpus to Edit", options=["Add New Corpus"] + corpus_ids
-    # )
 
     # Prepare a default corpus template.
     default_corpus = {
@@ -148,14 +142,11 @@ def corpora_editor(corpora):
     }
 
     with st.form("corpus_form"):
-        corpus_id = st.text_input(
-            "Corpus ID",
-        )
+        corpus_id = st.text_input("Corpus ID")
         growth_rate = st.number_input(
             "Growth Rate",
             min_value=0.0,
             max_value=10.0,
-            # value=corpus.get("growthRate", 0.0),
             step=0.01,
             format="%.2f",
         )
@@ -163,19 +154,16 @@ def corpora_editor(corpora):
             "Start Year",
             min_value=1900,
             max_value=3000,
-            # value=corpus.get("startYear", 2025),
             step=1,
         )
         end_year = st.number_input(
             "End Year",
             min_value=1900,
             max_value=3000,
-            # value=corpus.get("endYear", 2100),
             step=1,
         )
         initial_amount = st.number_input(
             "Initial Amount",
-            # value=corpus.get("initialAmount", 0),
             step=1000,
         )
         submitted = st.form_submit_button("Save Corpus")
@@ -195,7 +183,7 @@ def corpora_editor(corpora):
         else:
             corpora.append(updated_corpus)
             st.success(f"Added new corpus '{corpus_id}'.")
-        st.session_state["data"]["corpora"] = corpora
+        mutateSessionData({"corpora": corpora})
 
 
 def cashFlowEditor(cashflows):
@@ -207,17 +195,6 @@ def cashFlowEditor(cashflows):
     Returns the updated cashflows list.
     """
     st.header("Allocations Editor")
-    # Let the user select which cashflow to edit.
-    # cashflow_ids = [cf["id"] for cf in cashflows]
-    # selected_cf_id = st.selectbox(
-    #     "Select Cashflow to Edit Allocations", options=cashflow_ids
-    # )
-    # # Find the selected cashflow.
-    # selected_cf = next(cf for cf in cashflows if cf["id"] == selected_cf_id)
-    # # Get current allocations (or default to empty list).
-    # current_allocations = selected_cf.get("allocations", [])
-
-    # Use a form so that all changes are submitted together.
     with st.form("allocation_form"):
         cashflow = st.selectbox(
             "Select Cashflow to Edit Allocations",
@@ -241,7 +218,7 @@ def cashFlowEditor(cashflows):
         else:
             cashflows.append(updated_cashflow)
             st.toast(f"Added new cashflow '{updated_cashflow['id']}'.")
-        st.session_state["data"]["cashflows"] = cashflows
+        mutateSessionData({"cashflows": cashflows})
 
 
 # ------------------------------------------------------------------------------
@@ -254,26 +231,20 @@ def main():
     st.title("Die With Zero Calculator")
 
     # Use the sample data as a baseline.
-    data = st.session_state.get("data")  # note: adjust if a deep copy is needed
+    data = getSessionData()
 
     formCol1, formCol2 = st.columns(2)
     with formCol1:
-        # Allow the user to update the expenses via the expense editor.
-        # new_data["expenses"] =
         expense_editor(
             data.get("expenses", []),
             data.get("corpora", []),
         )
     with formCol2:
-
         corpora_editor(data.get("corpora", []))
-        # data["cashflows"] =
         cashFlowEditor(
             data.get("cashflows", []),
         )
     # Run the simulation with the current (possibly modified) sample data.
-    # if data != data:
-    #     st.session_state.update(data=data)
     simulation_result = run_simulation(data)
     simulation = simulation_result.get("simulation", [])
     warnings = simulation_result.get("warnings", [])
@@ -412,7 +383,21 @@ def main():
     # Display the current sample data in one collapsed expander.
     # ------------------------------------------------------------------------------
     with st.expander("Current Sample Data", expanded=False):
-        st.json(st.session_state["data"])
+        st.json(getSessionData())
+    with st.form("override-data"):
+        st.write("## Override Sample Data")
+        data_json = st.text_area(
+            "Data JSON",
+            value=json.dumps(getSessionData(), indent=2),
+            height=400,
+        )
+        if st.form_submit_button("Update Sample Data"):
+            try:
+                new_data = json.loads(data_json)
+                mutateSessionData(new_data)
+                st.success("Sample data updated successfully.")
+            except json.JSONDecodeError as e:
+                st.error(f"Invalid JSON: {e}")
 
 
 def showExpenses(data):
@@ -439,18 +424,20 @@ Funding: {", ".join(corp["id"] for corp in expense["fundingCorpora"])}
                 st.button(
                     "Disable",
                     key=f"disable-{expense['id']}",
-                    on_click=lambda: setExpenseEnabled(expenseIdx, False),
+                    on_click=lambda idx=expenseIdx: setExpenseEnabled(idx, False),
                 )
             else:
                 st.button(
                     "Enable",
                     key=f"enable-{expense['id']}",
-                    on_click=lambda: setExpenseEnabled(expenseIdx, True),
+                    on_click=lambda idx=expenseIdx: setExpenseEnabled(idx, True),
                 )
 
 
 def setExpenseEnabled(expenseIdx, enabled):
-    st.session_state["data"]["expenses"][expenseIdx]["enabled"] = enabled
+    data = getSessionData()
+    data["expenses"][expenseIdx]["enabled"] = enabled
+    mutateSessionData({"expenses": data["expenses"]})
 
 
 if __name__ == "__main__":

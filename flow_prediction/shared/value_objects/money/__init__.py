@@ -12,13 +12,23 @@ class Money(MoneyedMoney):
         super().__init__(amount, currency)
 
     def format(self):
-        return format_money(self, locale="en_IN", format_type="standard")
+        return format_money(
+            self,
+            locale="en_IN",
+            format_type="standard",
+        )
 
     def isQuantizedEqual(self, other: "Money"):
         return Decimal(self.amount).isQuantizedEqual(Decimal(other.amount))
 
     def __float__(self):
         return float(self.amount)
+
+    def __str__(self):
+        return self.format()
+
+    def __repr__(self):
+        return f"Money({self.format()})"
 
 
 # if isinstance(amount, MoneyedMoney):

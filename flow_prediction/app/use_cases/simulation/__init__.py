@@ -1,4 +1,5 @@
 from flow_prediction.aggregates import Expense, Corpus, Cashflow
+from flow_prediction.aggregates.expense import FundingCorpus
 from flow_prediction.services.simulation import CashflowSimulationService
 from flow_prediction.shared.value_objects import (
     InflationAdjustableValue,
@@ -50,7 +51,11 @@ class CashflowSimulationUseCase(UseCase):
                             fundingCorpora=(
                                 list(
                                     map(
-                                        lambda fc: {"id": Id(fc["id"])},
+                                        lambda fc: FundingCorpus(
+                                            Id(fc["id"]),
+                                            fc.get("startYear", None),
+                                            fc.get("forInitialOnly", False),
+                                        ),
                                         d["fundingCorpora"],
                                     )
                                 )

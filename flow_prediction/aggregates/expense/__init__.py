@@ -6,9 +6,24 @@ from ..base import Aggregate
 from ..corpus import Corpus
 
 
-class FundingCorpus(TypedDict):
+class FundingCorpus:
     id: Id
     startYear: Union[int, None]
+    forInitialOnly: bool
+
+    def isAllowedToFund(self, year: int, expenseType) -> bool:
+        if self.startYear is None or self.startYear <= year:
+            if expenseType == "recurring":
+                return self.forInitialOnly == False
+            else:
+                return True
+        else:
+            return False
+
+    def __init__(self, id: Id, startYear: Union[int, None], forInitialOnly: bool):
+        self.id = id
+        self.startYear = startYear
+        self.forInitialOnly = forInitialOnly
 
 
 class CorporaDeduction(TypedDict):
@@ -67,111 +82,69 @@ class Expense(Aggregate):
     def isActive(self, year: int) -> bool:
         return self.startYear <= year <= self.endYear and self.enabled
 
-    def getAmountNeeded(self, year) -> Money:
+    def getInitialAmountNeeded(self, year) -> Money:
+        return self.initialValue.getAmount(year) if year == self.startYear else Money(0)
+
+    def getRecurringAmountNeeded(self, year) -> Money:
         if not self.isActive(year):
             return Money(0)
-        return (
-            self.initialValue.getAmount(year)
-            if year == self.startYear
-            else Money(0)
-        ) + self.recurringValue.getAmount(year)
+        return self.recurringValue.getAmount(year)
 
-    def _getCorpus(self, corpuses: List[Corpus], id: Id):
-        for corpus in corpuses:
+    # @deprecated
+    # def getAmountNeeded(self, year) -> Money:
+    #     if not self.isActive(year):
+    #         return Money(0)
+    #     return (
+    #         self.initialValue.getAmount(year) if year == self.startYear else Money(0)
+    #     ) + self.recurringValue.getAmount(year)
+
+    def _getCorpus(self, corpora: List[Corpus], id: Id):
+        for corpus in corpora:
             if corpus.id == id:
                 return corpus
         raise ValueError(f"Funding Corpus {id} not found for {self}")
 
     def getCorporaDeductions(
-        self, corpuses: List[Corpus], year
+        self, corpora: List[Corpus], year
     ) -> Tuple[List[CorporaDeduction], Union[Corpus, None]]:
         if not self.isActive(year):
             return ([], None)
+        print(f"Calculating deductions for {self.id} in {year}")
         violatedCorpus: Union[Corpus, None] = None
-        amountToBeDeducted = self.getAmountNeeded(year)
         deductions = []
+        initialAmountToBeDeducted = self.getInitialAmountNeeded(year)
         for fundingCorpus in self.fundingCorpora[:-1]:
-            if (
-                "startYear" in fundingCorpus
-                and fundingCorpus["startYear"] > year
-            ):
-                continue
-            corpus = self._getCorpus(corpuses, fundingCorpus["id"])
-            corpusDeduction = min(
-                corpus.getBalance(),
-                amountToBeDeducted,
+            if fundingCorpus.isAllowedToFund(year, "initial"):
+                corpus = self._getCorpus(corpora, fundingCorpus.id)
+                corpusDeduction = min(
+                    corpus.getBalance(),
+                    initialAmountToBeDeducted,
+                )
+                deductions.append({"corpus": corpus, "deduction": corpusDeduction})
+                initialAmountToBeDeducted -= corpusDeduction
+        recurringAmountToBeDeducted = self.getRecurringAmountNeeded(year)
+        for fundingCorpus in self.fundingCorpora[:-1]:
+            if fundingCorpus.isAllowedToFund(year, "recurring"):
+                corpus = self._getCorpus(corpora, fundingCorpus.id)
+                corpusDeduction = min(
+                    corpus.getBalance(),
+                    recurringAmountToBeDeducted,
+                )
+                deductions.append({"corpus": corpus, "deduction": corpusDeduction})
+                recurringAmountToBeDeducted -= corpusDeduction
+
+        finalCorpus = self._getCorpus(corpora, self.fundingCorpora[-1].id)
+        amountToBeDeducted = initialAmountToBeDeducted + recurringAmountToBeDeducted
+        print(
+            f"Amount to be finally deducted: {amountToBeDeducted.format()} for {self.id} in {year}"
+        )
+        print(deductions)
+        if amountToBeDeducted > finalCorpus.getBalance():
+            raise ValueError(
+                f"Corpus {finalCorpus.id} doesn't have {amountToBeDeducted} to fund {self.id} in {year}, deductions so far: {deductions}"
             )
-            deductions.append({"corpus": corpus, "deduction": corpusDeduction})
-            amountToBeDeducted -= corpusDeduction
-        finalFundingCorpus = self.fundingCorpora[-1]
-        finalCorpus = self._getCorpus(corpuses, finalFundingCorpus["id"])
-        if amountToBeDeducted == 0 or (
-            amountToBeDeducted <= finalCorpus.getBalance()
-            and (
-                "startYear" not in finalFundingCorpus
-                or finalFundingCorpus["startYear"] <= year
-            )
-        ):
-            # deduction can safely happen
-            pass
-        else:
             violatedCorpus = finalCorpus
 
         # deduct any remaining amount from the last corpus, even if it doesn't have enough
-        deductions.append(
-            {"corpus": finalCorpus, "deduction": amountToBeDeducted}
-        )
+        deductions.append({"corpus": finalCorpus, "deduction": amountToBeDeducted})
         return (deductions, violatedCorpus)
-
-        # return list(map(lambda corpus:self._getCorpusDeductions(corpus['id']),self.fundingCorpora))
-
-    # def amount_for_year(self, year: int) -> Decimal:
-    #     """Compute how much we need in 'year' from this expense."""
-    #     if not self.isActive(year):
-    #         return Decimal("0")
-    #     if self.lumpsum and year != self.start_year:
-    #         return Decimal("0")
-    #     # recurring: apply growthRate
-    #     return get_inflated_amount(
-    #         self.base_amount, self.inflation_rate, self.start_year, year
-    #     )
-
-    # def withdraw(self, year: int, corpora: Dict[str, Corpus]) -> bool:
-    #     """
-    #     Try to withdraw from corpora in priority order.
-    #     Returns True if fully funded, False if partial.
-    #     If a corpus goes negative => you can decide to raise
-    #     an error or continue.
-    #     """
-    #     amt = self.amount_for_year(year)
-    #     if amt <= 0:
-    #         return True
-
-    #     # Attempt in priority order
-    #     remaining = amt
-    #     for corpus_id in self.corpus_priority:
-    #         if remaining <= 0:
-    #             break
-    #         if corpus_id not in corpora:
-    #             continue
-
-    #         # Withdraw from corpus
-    #         withdrawn = corpora[corpus_id].withdraw(remaining)
-    #         remaining -= withdrawn
-
-    #         # If you want to stop the simulation or raise error if negative:
-    #         if corpora[corpus_id].balance < 0:
-    #             print(
-    #                 f"[ALERT] Corpus '{corpus_id}' is negative after expense"
-    #                 f"'{self.name}' in year {year}."
-    #             )
-
-    #     # If leftover remains, not fully funded
-    #     if remaining > 0:
-    #         print(
-    #             f"[ALERT] Expense '{self.name}' not fully funded in year {year}. "
-    #             f"Shortfall={remaining}"
-    #         )
-    #         return False
-
-    #     return True

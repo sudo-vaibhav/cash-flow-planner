@@ -172,7 +172,6 @@ class CashflowSimulationService:
                     {
                         "id": corpus.id.value,
                         "value": float(amount),
-                        # "source": cashflow.id.value
                     }
                 )
                 # cashflowAllocation[(cashflow.id,corpus.id)] += amount

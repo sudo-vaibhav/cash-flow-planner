@@ -37,9 +37,9 @@ class Corpus(Aggregate):
         appreciatedAmount = self._getAnnualAppreciation(year)
         if appreciatedAmount.isQuantizedEqual(Money(0)):
             return
-        print(
-            f"Conducting annual appreciation for corpus {self.id} in year {year} with amount {float(appreciatedAmount.amount)}"
-        )
+        # print(
+        #     f"Conducting annual appreciation for corpus {self.id} in year {year} with amount {float(appreciatedAmount.amount)}"
+        # )
         self._balance += appreciatedAmount
 
     def deposit(self, amount: Money, year: int):
@@ -47,14 +47,15 @@ class Corpus(Aggregate):
             raise ValueError(
                 f"Corpus {self.id} is not active in year {year}, hence cannot deposit, only grow"
             )
+        print(f"Depositing {amount.format()} to {self.id} in year {year}")
         self._balance += amount
 
     def transferAllTo(self, target, year):
         if not isinstance(target, Corpus):
             raise ValueError(f"Target must be a Corpus")
-        print(
-            f"Transferring the entire corpus value {float(self._balance.amount)} from {self.id} to {target.id}"
-        )
+        # print(
+        #     f"Transferring the entire corpus value {float(self._balance.amount)} from {self.id} to {target.id}"
+        # )
         balance = self.getBalance()
         self.withdraw(balance, year)
         target.deposit(balance, year)
@@ -68,9 +69,7 @@ class Corpus(Aggregate):
     def getInflationAdjustedBalance(
         self, currentYear, baseYear: int, baseInflation: Decimal
     ):
-        return self._balance / (
-            (1 + baseInflation) ** (currentYear - baseYear)
-        )
+        return self._balance / ((1 + baseInflation) ** (currentYear - baseYear))
 
     def withdraw(self, amount: Money, year: int):
         """
@@ -95,7 +94,7 @@ class Corpus(Aggregate):
     #     self.balance *= Decimal("1") + self.growth_rate
 
     def __repr__(self):
-        return f"<Corpus {self.id}: balance={self._balance:.2f}>"
+        return f"<Corpus {self.id}: balance={self._balance}>"
 
     def _getAnnualAppreciation(self, year):
         # if not self.isActive(year):
